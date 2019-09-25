@@ -10,6 +10,8 @@ import az.pashabank.ls.msstudent.model.dto.StudentDto;
 import az.pashabank.ls.msstudent.repository.StudentRepository;
 import az.pashabank.ls.msstudent.repository.entity.StudentEntity;
 import az.pashabank.ls.msstudent.service.StudentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +22,7 @@ public class StudentServiceImpl implements StudentService {
     private final StudentRepository studentRepository;
     private final StudentMapper studentMapper;
     private final CollegeClient collegeClient;
+    private static final Logger logger = LoggerFactory.getLogger(StudentServiceImpl.class);
 
     public StudentServiceImpl(StudentRepository studentRepository,
                               StudentMapper studentMapper,
@@ -30,13 +33,19 @@ public class StudentServiceImpl implements StudentService {
     }
 
     public StudentDto getStudentById(Long id) {
+        logger.info("ActionLog.getStudentById.start : id {}", id);
+
         StudentEntity studentEntity = studentRepository
                 .findById(id)
                 .orElseThrow(() -> new NotFoundException("Student with id: " + id + " is not found"));
+        logger.info("ActionLog.getStudentById.success : id {}", id);
+
         return studentMapper.mapEntityToDto(studentEntity);
     }
 
     public void createStudent(StudentRequest studentRequest) {
+        logger.info("ActionLog.createStudent.start");
+
         //TODO good to use validators instead of this
         if (studentRequest.getName() == null ||
                 studentRequest.getCollegeId() == null ||
@@ -46,7 +55,14 @@ public class StudentServiceImpl implements StudentService {
             throw new NotValidRequestException("Student Request is not valid");
         }
 
-        collegeClient.getCollegeById(studentRequest.getCollegeId());
+        logger.info("ActionLog.collegeClient.getCollegeById.start : collegeId {}", studentRequest.getCollegeId());
+
+        try {
+            collegeClient.getCollegeById(studentRequest.getCollegeId());
+        }
+        catch (Exception e){
+            logger.warn("ActionLog.collegeClient.getCollegeById : collegeId {}", studentRequest.getCollegeId());
+        }
 
         StudentEntity studentEntity = StudentEntity
                 .builder()
@@ -56,17 +72,23 @@ public class StudentServiceImpl implements StudentService {
                 .build();
 
         studentRepository.save(studentEntity);
+        logger.info("ActionLog.createStudent.success");
     }
 
     public void deleteStudent(Long id) {
+        logger.info("ActionLog.deleteStudent.start: id {}", id);
+
         studentRepository
                 .findById(id)
                 .orElseThrow(() -> new NotFoundException("Student with id : " + id + "  not found"));
 
         studentRepository.deleteById(id);
+        logger.info("ActionLog.deleteStudent.success");
     }
 
     public void updateStudent(Long id, StudentRequest studentRequest) {
+        logger.info("ActionLog.updateStudent.start: id{}", id);
+
         StudentEntity studentEntity = studentRepository
                 .findById(id)
                 .orElseThrow(() -> new NotFoundException("Student with id: " + id + " not found"));
@@ -84,15 +106,20 @@ public class StudentServiceImpl implements StudentService {
         }
 
         studentRepository.save(studentEntity);
+        logger.info("ActionLog.updateStudent.success: id{}", id);
     }
 
     public List<StudentDto> getStudentsByCity(String city) {
+        logger.info("ActionLog.getStudentsByCity.start: city{}", city);
+
         List<Long> collegeIds = collegeClient
                 .getCollegesByCity(city)
                 .stream()
                 .map(CollegeDto::getId).collect(Collectors.toList());
 
         List<StudentEntity> studentEntities = studentRepository.findAllByCollegeIdIn(collegeIds);
+        logger.info("ActionLog.getStudentsByCity.success: city{}", city);
+
         return studentMapper.mapEntityListToDtoList(studentEntities);
     }
 }
