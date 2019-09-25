@@ -18,4 +18,10 @@ public class CollegeClientFallback implements CollegeClient {
         logger.error("ActionLog.getCollegesByCity.error college client fallback");
         throw new ClientException();
     }
+
+    @Override
+    public CollegeDto getCollegeById(Long id) {
+        logger.error("ActionLog.getCollegeById.error college client fallback");
+        throw new ClientException();
+    }
 }

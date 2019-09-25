@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+//TODO will use mapstruct since next week
 public class StudentMapper {
     public StudentDto mapEntityToDto(StudentEntity studentEntity) {
         return StudentDto.builder()
